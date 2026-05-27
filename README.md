@@ -1,45 +1,60 @@
-OmniCompress: Full-Stack Image Compression Engine
-OmniCompress is a powerful web application designed to compress images on the fly while tracking performance metrics and saving history in a database.
+# 🚀 OmniCompress: Full-Stack Image Compression Engine
 
-🚀 Features
-Efficient Compression: Uses Pillow (PIL) to reduce image file size while maintaining visual quality.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.13-blue.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Flask-2.x-lightgrey.svg" alt="Flask">
+  <img src="https://img.shields.io/badge/React-18.x-blue.svg" alt="React">
+  <img src="https://img.shields.io/badge/MongoDB-Database-green.svg" alt="MongoDB">
+</p>
 
-Real-time Metrics: Calculates and displays "Before" and "After" file sizes, along with the total percentage of storage saved.
+**OmniCompress** is a high-performance web application that optimizes images while providing real-time analytics. It serves as a comprehensive example of a full-stack integration between a Python backend, a React frontend, and a NoSQL database.
 
-History Tracking: Automatically logs every compression task into a MongoDB database for future reference.
+---
 
-Modern Stack: Built with a React frontend and a Flask (Python) backend.
+## 🌟 Core Functionality
+- **Dynamic Compression**: Uses the Pillow library to strip metadata and adjust image quality, drastically reducing file size.
+- **Analytics Dashboard**: Calculates precise "Before" vs. "After" sizes and calculates the percentage of storage saved.
+- **Data Persistence**: Uses MongoDB to maintain a log of all previous compression tasks, storing filenames, original/compressed sizes, and timestamps.
 
-🛠 Tech Stack
-Frontend: React.js, CSS
+## 🛠 Tech Stack
+| Tier | Technology |
+| :--- | :--- |
+| **Frontend** | React, CSS3, Fetch API |
+| **Backend** | Flask, Python 3.13, Pillow |
+| **Database** | MongoDB (Local) |
+| **Version Control**| Git & GitHub |
 
-Backend: Flask (Python 3.13)
+---
 
-Image Processing: Pillow (PIL)
+## ⚙️ Installation & Setup
+### 1. Backend Setup
+1. `cd backend`
+2. Create and activate environment: 
+   `python -m venv new-venv`
+   `.\new-venv\Scripts\activate`
+3. Install requirements: `pip install Flask Flask-CORS Pillow pymongo`
+4. Launch the server: `py app.py`
 
-Database: MongoDB
+### 2. Frontend Setup
+1. `cd frontend`
+2. Install modules: `npm install`
+3. Launch: `npm start`
 
-Communication: RESTful API with Flask-CORS
+---
 
-⚙️ How to Setup
-1. Backend Setup
-Navigate to the backend folder.
+## 📝 API Endpoints
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/compress` | POST | Accepts image file, compresses it, and returns metrics. |
+| `/download/<filename>` | GET | Serves the compressed file for user download. |
+| `/history` | GET | Returns the last 20 compression logs from MongoDB. |
 
-Activate your virtual environment: .\new-venv\Scripts\activate
+---
 
-Install dependencies: pip install Flask Flask-CORS Pillow pymongo
+## 🛠 Troubleshooting
+- **Pillow Build Error**: If you see "Failed building wheel for pillow," ensure you are using Python 3.13 and running `pip install Pillow --no-cache-dir`.
+- **Database Connection**: Ensure your local MongoDB service (mongod) is actually running in the background before starting the Flask server.
+- **Port Conflicts**: If port 3000 (React) or 5000 (Flask) is in use, verify no other instances are running in your Terminal/Task Manager.
 
-Run the server: py app.py
-
-2. Frontend Setup
-Navigate to the frontend folder.
-
-Install dependencies: npm install
-
-Start the application: npm start
-
-📊 Database
-The application connects to a local MongoDB instance at mongodb://localhost:27017/. It utilizes a database named omnicompress_db and a collection named compression_history to store logs of all processed files.
-
-🤝 Contributing
-Feel free to fork this project and submit pull requests to add new compression algorithms or dashboard features!
+---
+*Built with passion for clean, efficient code.*
