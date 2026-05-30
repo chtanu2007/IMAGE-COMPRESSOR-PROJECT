@@ -8,9 +8,7 @@ from pymongo import MongoClient
 app = Flask(__name__)
 CORS(app)
 
-# ==========================================
 # 1. MongoDB Configuration
-# ==========================================
 try:
     client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=2000)
     db = client["omnicompress_db"]
@@ -30,10 +28,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Create the uploads folder if it doesn't exist yet
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
-# ==========================================
 # 3. Compression Route (Calculates Sizes & Logs)
-# ==========================================
 @app.route('/compress', methods=['POST'])
 def compress_file():
     if 'image' not in request.files:
@@ -96,17 +91,13 @@ def compress_file():
         'download_filename': compressed_filename
     }), 200
 
-# ==========================================
 # 4. Download Route (For Frontend to get the file)
-# ==========================================
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
     # This route allows React to actually download the file after seeing the stats
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
 
-# ==========================================
 # 5. History Route (For a Frontend Dashboard)
-# ==========================================
 @app.route('/history', methods=['GET'])
 def get_history():
     try:
