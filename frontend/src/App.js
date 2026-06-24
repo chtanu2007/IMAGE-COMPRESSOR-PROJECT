@@ -1,104 +1,135 @@
-import React, { useState } from 'react';
-import './App.css'; // Make sure you keep your CSS imports!
+import React, { useState, useEffect, useCallback } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+
+// Dynamically connects to your backend whether on localhost or local IP
+const BACKEND_URL = `http://${window.location.hostname}:5000`;
 
 function App() {
   const [file, setFile] = useState(null);
+  const [latestBatchId, setLatestBatchId] = useState(null);
   const [stats, setStats] = useState(null);
+  const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
-  // 1. Handle file selection
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/analytics`);
+      if (!res.ok) throw new Error("Server error");
+      const data = await res.json();
+      
+      if (data && !data.error && Array.isArray(data)) {
+        setChartData(data);
+      }
+    } catch (err) {
+      console.error("Error fetching analytics chart:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [fetchAnalytics]);
+
   const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setStats(null); // Reset the stats screen when picking a new file
-    setError(null);
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
   };
 
-  // 2. Send file to Flask backend
   const handleUpload = async () => {
-    if (!file) {
-      setError("Please select a file first.");
-      return;
-    }
-
+    if (!file) return alert("Please select a file (.zip or image) first!");
     setLoading(true);
-    setError(null);
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append("image", file);
 
     try {
-      // Send the file to your Flask /compress route
-      const response = await fetch('http://localhost:5000/compress', {
-        method: 'POST',
+      const res = await fetch(`${BACKEND_URL}/compress`, {
+        method: "POST",
         body: formData,
       });
+      const data = await res.json();
 
-      if (!response.ok) {
-        throw new Error("Failed to compress file. Check your backend!");
+      if (res.ok) {
+        setStats(data);
+        setLatestBatchId(data.batch_id || null);
+        setTimeout(() => fetchAnalytics(), 300);
+      } else {
+        alert(data.error || "Compression failed.");
       }
-
-      // 3. Receive the JSON stats from Flask
-      const data = await response.json();
-      setStats(data); // Save the stats to display them
-      
     } catch (err) {
-      setError(err.message);
+      alert("Failed to connect to backend server. Make sure Python is running!");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDownload = () => {
+    if (!latestBatchId) return;
+    window.location.href = `${BACKEND_URL}/download-batch/${latestBatchId}`;
+  };
+
   return (
-    <div className="App" style={{ padding: '40px', fontFamily: 'sans-serif' }}>
-      <h1>OmniCompress</h1>
-      
-      {/* Upload Section */}
-      <div style={{ marginBottom: '20px' }}>
-        <input type="file" onChange={handleFileChange} />
-        <button onClick={handleUpload} disabled={loading} style={{ marginLeft: '10px' }}>
-          {loading ? "Compressing..." : "Compress Image"}
+    <div style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '900px', margin: '0 auto', color: '#333' }}>
+      <div style={{ borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
+        <h1 style={{ margin: 0 }}>Omnicompressor Dashboard ⚡</h1>
+      </div>
+
+      <div style={{ background: '#f8f9fa', border: '1px solid #ddd', padding: '25px', borderRadius: '8px', marginBottom: '30px' }}>
+        <h3 style={{ marginTop: 0 }}>1. Select Assets</h3>
+        <input type="file" onChange={handleFileChange} accept=".zip,image/*" style={{ marginBottom: '15px', display: 'block' }} />
+        <button 
+          onClick={handleUpload} 
+          disabled={loading} 
+          style={{ 
+            background: loading ? '#95a5a6' : '#3498db', 
+            color: 'white', padding: '10px 20px', borderRadius: '5px', 
+            fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', border: 'none' 
+          }}
+        >
+          {loading ? "Compressing Fast (Using Multi-Core Processing)..." : "Compress Upload"}
         </button>
       </div>
 
-      {/* Error Message */}
-      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
-
-      {/* 4. Display Stats & Download Button (Only shows after success) */}
       {stats && (
-        <div style={{ 
-          marginTop: '30px', 
-          padding: '20px', 
-          border: '2px dashed #4CAF50', 
-          borderRadius: '10px',
-          maxWidth: '400px'
-        }}>
-          <h2 style={{ color: '#4CAF50' }}>Compression Success! 🎉</h2>
-          
-          <div style={{ textAlign: 'left', margin: '20px 0' }}>
-            <p><strong>Original Size:</strong> {stats.original_size_kb} KB</p>
-            <p><strong>Compressed Size:</strong> {stats.compressed_size_kb} KB</p>
-            <p><strong>Space Saved:</strong> <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>{stats.compression_percentage}%</span></p>
+        <div style={{ background: '#eafaf1', border: '1px solid #2ecc71', padding: '25px', borderRadius: '8px', marginBottom: '30px' }}>
+          <h3 style={{ marginTop: 0, color: '#27ae60' }}>🎉 Compression Successful!</h3>
+          <div style={{ display: 'flex', gap: '40px', marginBottom: '20px' }}>
+            <div>
+              <p style={{ margin: '5px 0', fontSize: '14px', color: '#555' }}>Items Processed</p>
+              <h2 style={{ margin: 0 }}>{stats.total_images || 1}</h2>
+            </div>
+            <div>
+              <p style={{ margin: '5px 0', fontSize: '14px', color: '#555' }}>Space Saved (KB)</p>
+              <h2 style={{ margin: 0, color: '#27ae60' }}>{stats.space_saved_kb} KB</h2>
+            </div>
           </div>
-          
-          {/* Download Button using the new Flask /download route */}
-          <a 
-            href={`http://localhost:5000/download/${stats.download_filename}`} 
-            download
-          >
-            <button style={{ 
-              padding: '10px 20px', 
-              backgroundColor: '#4CAF50', 
-              color: 'white', 
-              border: 'none', 
-              borderRadius: '5px',
-              cursor: 'pointer'
-            }}>
-              Download Compressed File
+          {latestBatchId && (
+            <button 
+              onClick={handleDownload} 
+              style={{ background: '#2ecc71', color: 'white', padding: '12px 20px', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer', border: 'none' }}
+            >
+              📥 Download Compressed Package
             </button>
-          </a>
+          )}
         </div>
       )}
+
+      <div style={{ background: '#ffffff', border: '1px solid #ddd', padding: '25px', borderRadius: '8px' }}>
+        <h3>Lifetime Storage Savings Timeline</h3>
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+          {chartData && chartData.length > 0 ? (
+            <LineChart width={800} height={300} data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="uploadNumber" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="totalSavedMB" stroke="#8884d8" strokeWidth={3} activeDot={{ r: 8 }} />
+            </LineChart>
+          ) : (
+            <p style={{ color: '#999', textAlign: 'center', padding: '50px 0' }}>No upload history data available yet.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
